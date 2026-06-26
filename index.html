@@ -371,7 +371,7 @@
             <input
               id="azureKeyInput"
               type="password"
-              placeholder="Azure key loaded ✓"
+              placeholder="Paste your Azure KEY 1 here…"
               autocomplete="off"
               spellcheck="false"
               style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel-solid);color:var(--ink);padding:11px 38px 11px 12px;outline:none;font-family:monospace;font-size:12px"
@@ -385,7 +385,8 @@
             >👁</button>
           </div>
           <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5">
-            Get your free key from <strong>portal.azure.com</strong> → Speech resource → Keys and Endpoint → KEY 1
+            🔐 Your key is saved privately in your browser only — never sent anywhere else.<br>
+            Get your free key: <strong>portal.azure.com</strong> → QuranSpeech → Keys and Endpoint → KEY 1
           </div>
         </div>
 
@@ -521,9 +522,10 @@
 
     // ── Azure TTS config — fill in your key and region ──
     const AZURE_CONFIG = {
-      key:    "4Grng42tHklLaiHcAAw93pbnqRjjpy3IC5IKrqrUCt79l5nRZtN0JQQJ99CFACqBBLyXJ3w3AAAYACOGtVf5",
+      key:    "",
       region: "southeastasia"
     };
+    // Key is entered by the user in the settings panel — never hardcoded here for security
 
     const AZURE_VOICES = {
       my: [
@@ -804,9 +806,11 @@
         el.voiceHint.textContent = "Azure neural — any browser";
         hideEdgeBanner();
         if (el.azureKeyField) el.azureKeyField.hidden = false;
-        // Sync key field with current config
-        if (el.azureKeyInput && AZURE_CONFIG.key !== "PASTE_YOUR_AZURE_KEY_HERE") {
-          el.azureKeyInput.value = AZURE_CONFIG.key;
+        // Load key from localStorage if saved
+        const savedKey = localStorage.getItem("quran_azure_key") || "";
+        if (savedKey) {
+          AZURE_CONFIG.key = savedKey;
+          if (el.azureKeyInput) el.azureKeyInput.value = savedKey;
         }
         if (!AZURE_CONFIG.key || AZURE_CONFIG.key === "PASTE_YOUR_AZURE_KEY_HERE") {
           showNotice("Azure key not set. Add your key to the settings panel.", "error");
@@ -1253,12 +1257,20 @@
         refreshVoices();
       });
       if (el.azureKeyInput) {
+        // Pre-fill from localStorage on load
+        const savedKey = localStorage.getItem("quran_azure_key") || "";
+        if (savedKey) {
+          AZURE_CONFIG.key = savedKey;
+          el.azureKeyInput.value = savedKey;
+        }
         el.azureKeyInput.addEventListener("input", () => {
           const k = el.azureKeyInput.value.trim();
           AZURE_CONFIG.key = k;
           if (k && k.length > 20) {
-            showNotice("✅ Azure key saved — Myanmar and English voice ready on all browsers.");
-            el.azureKeyHint && (el.azureKeyHint.textContent = "Key active ✓");
+            // Save to localStorage so user only needs to paste once
+            localStorage.setItem("quran_azure_key", k);
+            showNotice("✅ Azure key saved — Myanmar and English neural voice ready on all browsers and phones.");
+            el.azureKeyHint && (el.azureKeyHint.textContent = "Key saved ✓");
           }
         });
       }
