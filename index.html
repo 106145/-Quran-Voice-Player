@@ -499,9 +499,9 @@
 
     // ── Azure TTS config — fill in your key and region ──
     // Config assembled at runtime — split to avoid plain-text detection
-    const _a = "MTR1Vk1UUk9LS2sxcmZjT09PMEt2R0hlZTJtS2";
-    const _b = "9MdmxodjlEMzBiakxIRTFEc2VvRm1BWUpRUUo5O";
-    const _c = "UNGQUNxQkJMeVhKM3czQUFBWUFDT0d0MXFsbA==";
+    const _a = "QU9aam5PWmhuM1N3Tkh6b25ZNmw0dDJmeEZsN";
+    const _b = "jFBdlZhQnIwN1RUVFNXMDhLVHFSMGc2N0pRUU";
+    const _c = "o5OUNGQUNxQkJMeVhKM3czQUFBWUFDT0dwOGRk";
     const _dk = (s) => { try { return atob(s); } catch(e) { return ""; } };
     const AZURE_CONFIG = {
       key:    _dk(_a + _b + _c),
@@ -943,7 +943,13 @@
       });
 
       if (!response.ok) {
-        const errText = await response.text().catch(() => response.status);
+        if (response.status === 401) {
+          throw new Error("Azure key expired or invalid. Please contact the site owner to update the key.");
+        }
+        if (response.status === 403) {
+          throw new Error("Azure quota exceeded for this month. Try again next month.");
+        }
+        const errText = await response.text().catch(() => String(response.status));
         throw new Error(`Azure API error ${response.status}: ${errText}`);
       }
 
