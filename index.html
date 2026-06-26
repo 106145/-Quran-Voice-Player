@@ -352,7 +352,7 @@
         <div id="voiceEngineField" class="field" hidden>
           <label for="voiceEngineSelect">Voice engine <small>Mode 2</small></label>
           <select id="voiceEngineSelect">
-            <option value="edge">Online neural voice — recommended</option>
+            <option value="azure">🌐 Azure neural voice — works everywhere</option>
             <option value="browser">Device / browser voice</option>
           </select>
         </div>
@@ -360,6 +360,33 @@
         <div id="voiceField" class="field" hidden>
           <label for="voiceSelect">Calm voice <small id="voiceHint">Checking voices…</small></label>
           <select id="voiceSelect"></select>
+        </div>
+
+        <div id="azureKeyField" class="field" hidden>
+          <label for="azureKeyInput">
+            Azure key
+            <small id="azureKeyHint" style="color:var(--green);font-weight:600">Works on all browsers</small>
+          </label>
+          <div style="position:relative">
+            <input
+              id="azureKeyInput"
+              type="password"
+              placeholder="Azure key loaded ✓"
+              autocomplete="off"
+              spellcheck="false"
+              style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel-solid);color:var(--ink);padding:11px 38px 11px 12px;outline:none;font-family:monospace;font-size:12px"
+            />
+            <button
+              type="button"
+              onclick="toggleKeyVisibility()"
+              id="keyToggleBtn"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px"
+              title="Show/hide key"
+            >👁</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5">
+            Get your free key from <strong>portal.azure.com</strong> → Speech resource → Keys and Endpoint → KEY 1
+          </div>
         </div>
 
         <div class="field">
@@ -413,7 +440,7 @@
         </div>
 
         <div id="sourceNote" class="source-note">
-          Arabic: Uthmani text • Reciter: Mishary Rashid Alafasy • English: Saheeh International • Myanmar: Hashim Tin Myint. Myanmar voice test: Nilar/Thiha neural voice in Microsoft Edge.
+          Arabic: Uthmani text • Reciter: Mishary Rashid Alafasy • English: Saheeh International • Myanmar: Hashim Tin Myint • Voice: Azure AI Speech (Nilar/Thiha neural) — works on all browsers.
         </div>
       </aside>
 
@@ -428,16 +455,8 @@
 
         <div id="notice" class="notice"></div>
 
-        <!-- Edge open banner -->
-        <div id="edgeBanner">
-          <div class="eb-title">🇲🇲 Myanmar Neural Voice requires Microsoft Edge</div>
-          <div class="eb-body">The Myanmar neural voices (<strong>Nilar</strong> &amp; <strong>Thiha</strong>) are beautiful, calm voices — but they only work inside <strong>Microsoft Edge</strong> browser. You are currently using a different browser.<br><br>Click the button below to open this file in Edge automatically.</div>
-          <div class="eb-actions">
-            <button class="edge-open-btn" onclick="openInEdge()" type="button">🌐 Open this file in Microsoft Edge</button>
-            <button class="edge-copy-btn" onclick="copyFilePath()" type="button" id="copyPathBtn">📋 Copy file path</button>
-          </div>
-          <div class="eb-hint" id="ebHint">💡 If Edge does not open automatically: open Edge → press Ctrl+O → paste the path → press Enter.</div>
-        </div>
+        <!-- Azure status notice (replaces Edge banner) -->
+        <div id="edgeBanner" style="display:none"></div>
 
         <div id="contentStage" class="content-stage">
           <div id="loadingState" class="empty-state">
@@ -500,15 +519,21 @@
       { number: 3, name: "سُورَةُ آلِ عِمْرَانَ", englishName: "Aal-i-Imraan", englishNameTranslation: "The Family of Imraan", numberOfAyahs: 200 }
     ];
 
-    const EDGE_VOICES = {
+    // ── Azure TTS config — fill in your key and region ──
+    const AZURE_CONFIG = {
+      key:    "4Grng42tHklLaiHcAAw93pbnqRjjpy3IC5IKrqrUCt79l5nRZtN0JQQJ99CFACqBBLyXJ3w3AAAYACOGtVf5",
+      region: "southeastasia"
+    };
+
+    const AZURE_VOICES = {
       my: [
-        { name: "my-MM-NilarNeural", label: "Nilar — Myanmar female neural" },
-        { name: "my-MM-ThihaNeural", label: "Thiha — Myanmar male neural" }
+        { name: "my-MM-NilarNeural", label: "Nilar — Myanmar female (calm)" },
+        { name: "my-MM-ThihaNeural", label: "Thiha — Myanmar male (calm)" }
       ],
       en: [
-        { name: "en-US-AvaNeural", label: "Ava — English female neural" },
-        { name: "en-GB-SoniaNeural", label: "Sonia — English UK female neural" },
-        { name: "en-US-GuyNeural", label: "Guy — English male neural" }
+        { name: "en-US-AvaNeural",   label: "Ava — English female (natural)" },
+        { name: "en-GB-SoniaNeural", label: "Sonia — English UK female" },
+        { name: "en-US-GuyNeural",   label: "Guy — English male" }
       ]
     };
 
@@ -543,7 +568,7 @@
       "speedRange","speedValue","autoNextToggle","repeatToggle","readerPanel","surahTitle","surahMeta",
       "ayahBadge","notice","loadingState","verseContent","arabicText","translationText","translationLabel",
       "playBtn","prevBtn","nextBtn","progressFill","timeLabel","playModeLabel","playSourceLabel",
-      "arabicAudio","ttsAudio","ayahCountLabel"
+      "arabicAudio","ttsAudio","ayahCountLabel","azureKeyInput","azureKeyField"
     ].map(id => [id, document.getElementById(id)]));
 
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -731,7 +756,7 @@
       el.voiceField.hidden = reading;
       showNotice("");
       if (!reading) {
-        el.voiceEngineSelect.value = state.language === "my" ? "edge" : "browser";
+        el.voiceEngineSelect.value = "azure";
         refreshVoices();
       }
       updatePlayerLabels();
@@ -745,8 +770,8 @@
       } else {
         el.playModeLabel.textContent = state.language === "my" ? "Myanmar voice" : "English voice";
         const engine = el.voiceEngineSelect.value;
-        el.playSourceLabel.textContent = engine === "edge"
-          ? (el.voiceSelect.selectedOptions[0]?.textContent || "Online neural voice")
+        el.playSourceLabel.textContent = engine === "azure"
+          ? (el.voiceSelect.selectedOptions[0]?.textContent || "Azure neural voice")
           : (selectedBrowserVoice()?.name || "Device speech voice");
       }
     }
@@ -770,24 +795,31 @@
 
     function refreshVoices() {
       const engine = el.voiceEngineSelect.value;
-      if (engine === "edge") {
-        const choices = EDGE_VOICES[state.language];
+      if (engine === "azure") {
+        const choices = AZURE_VOICES[state.language];
         const previous = el.voiceSelect.value;
         el.voiceSelect.innerHTML = choices.map(v => `<option value="${v.name}">${escapeHTML(v.label)}</option>`).join("");
         if (choices.some(v => v.name === previous)) el.voiceSelect.value = previous;
         el.voiceSelect.disabled = false;
-        if (isMicrosoftEdge()) {
-          el.voiceHint.textContent = "Online neural";
-          showNotice(state.language === "my" ? "Myanmar neural voice is ready. Continuous playback will move automatically to the next Ayah." : "Online neural voice is ready.");
-          hideEdgeBanner();
+        el.voiceHint.textContent = "Azure neural — any browser";
+        hideEdgeBanner();
+        if (el.azureKeyField) el.azureKeyField.hidden = false;
+        // Sync key field with current config
+        if (el.azureKeyInput && AZURE_CONFIG.key !== "PASTE_YOUR_AZURE_KEY_HERE") {
+          el.azureKeyInput.value = AZURE_CONFIG.key;
+        }
+        if (!AZURE_CONFIG.key || AZURE_CONFIG.key === "PASTE_YOUR_AZURE_KEY_HERE") {
+          showNotice("Azure key not set. Add your key to the settings panel.", "error");
         } else {
-          el.voiceHint.textContent = "Open in Microsoft Edge";
-          showEdgeBanner();
+          showNotice(state.language === "my"
+            ? "🇲🇲 Myanmar neural voice ready — works on every browser and phone."
+            : "🌐 Azure neural voice ready — works on every browser and phone.");
         }
         updatePlayerLabels();
         return;
       }
 
+      if (el.azureKeyField) el.azureKeyField.hidden = true;
       if (!("speechSynthesis" in window)) {
         el.voiceSelect.innerHTML = '<option>Speech synthesis not supported</option>';
         el.voiceSelect.disabled = true;
@@ -887,58 +919,57 @@
         return;
       }
 
-      if (el.voiceEngineSelect.value === "edge") {
+      if (el.voiceEngineSelect.value === "azure") {
         try {
-          await playEdgeNeural(text, session);
+          await playAzureNeural(text, session);
           return;
         } catch (error) {
-          console.error(error);
-          if (state.language === "my" && nativeVoiceCount() === 0) {
-            showEdgeBanner();
-            setPlaying(false);
-            return;
-          }
-          showNotice("Online neural voice failed; switching to the installed device voice.");
+          console.error("Azure TTS error:", error);
+          showNotice("Azure voice failed: " + error.message + " — switching to device voice.", "error");
         }
       }
       playBrowserSpeech(text, session);
     }
 
-    async function loadEdgeModule() {
-      if (state.edgeModule) return state.edgeModule;
-      if (!state.edgeModulePromise) {
-        state.edgeModulePromise = import(API.edgeModule).then(mod => {
-          state.edgeModule = mod;
-          return mod;
-        }).catch(error => {
-          state.edgeModulePromise = null;
-          throw error;
-        });
+    async function playAzureNeural(text, session) {
+      if (!AZURE_CONFIG.key || AZURE_CONFIG.key === "PASTE_YOUR_AZURE_KEY_HERE") {
+        throw new Error("Azure key not configured");
       }
-      return state.edgeModulePromise;
-    }
-
-    async function playEdgeNeural(text, session) {
-      if (!isMicrosoftEdge()) throw new Error("Microsoft Edge browser is required for key-free neural TTS");
       clearSpeechOnly();
       el.arabicAudio.pause();
-      const mod = await loadEdgeModule();
-      if (session !== state.playbackSession || !state.isPlaying) return;
-      const VoiceClass = mod.EdgeTTS || mod.UniversalEdgeTTS;
-      if (!VoiceClass) throw new Error("Neural voice module did not load correctly");
 
-      const speedPercent = Math.round((getSpeed() - 1) * 100);
-      const tts = new VoiceClass(text, el.voiceSelect.value, {
-        rate: `${speedPercent >= 0 ? "+" : ""}${speedPercent}%`,
-        pitch: "+0Hz",
-        volume: "+0%"
+      const voice    = el.voiceSelect.value || (state.language === "my" ? "my-MM-NilarNeural" : "en-US-AvaNeural");
+      const speedPct = Math.round((getSpeed() - 1) * 100);
+      const rateStr  = (speedPct >= 0 ? "+" : "") + speedPct + "%";
+
+      // Build SSML
+      const ssml = `<speak version='1.0' xml:lang='${state.language === "my" ? "my-MM" : "en-US"}'>
+        <voice name='${voice}'>
+          <prosody rate='${rateStr}' pitch='+0Hz'>${text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</prosody>
+        </voice>
+      </speak>`;
+
+      const endpoint = `https://${AZURE_CONFIG.region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Ocp-Apim-Subscription-Key": AZURE_CONFIG.key,
+          "Content-Type": "application/ssml+xml",
+          "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+          "User-Agent": "QuranPlayer/1.0"
+        },
+        body: ssml
       });
-      const result = await tts.synthesize();
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => response.status);
+        throw new Error(`Azure API error ${response.status}: ${errText}`);
+      }
+
       if (session !== state.playbackSession || !state.isPlaying) return;
 
-      const audioBlob = result.audio instanceof Blob
-        ? result.audio
-        : new Blob([await result.audio.arrayBuffer()], { type: "audio/mpeg" });
+      const audioBlob = await response.blob();
       revokeTtsUrl();
       state.ttsObjectUrl = URL.createObjectURL(audioBlob);
       el.ttsAudio.src = state.ttsObjectUrl;
@@ -1210,7 +1241,7 @@
       el.languageSelect.addEventListener("change", async () => {
         stopPlayback();
         state.language = el.languageSelect.value;
-        if (state.mode === "listen") el.voiceEngineSelect.value = state.language === "my" ? "edge" : "browser";
+        if (state.mode === "listen") el.voiceEngineSelect.value = "azure";
         if (state.language === "my" && !state.myanmar.length && state.myanmarPromise) await state.myanmarPromise;
         if (state.mode === "listen") refreshVoices();
         else showNotice("");
@@ -1221,6 +1252,16 @@
         stopPlayback();
         refreshVoices();
       });
+      if (el.azureKeyInput) {
+        el.azureKeyInput.addEventListener("input", () => {
+          const k = el.azureKeyInput.value.trim();
+          AZURE_CONFIG.key = k;
+          if (k && k.length > 20) {
+            showNotice("✅ Azure key saved — Myanmar and English voice ready on all browsers.");
+            el.azureKeyHint && (el.azureKeyHint.textContent = "Key active ✓");
+          }
+        });
+      }
       el.voiceSelect.addEventListener("change", updatePlayerLabels);
       el.speedRange.addEventListener("input", () => {
         el.speedValue.textContent = `${getSpeed().toFixed(2)}×`;
@@ -1433,6 +1474,14 @@
       if (_bgMasterGain && _bgCtx) {
         _bgMasterGain.gain.setTargetAtTime(vol, _bgCtx.currentTime, 0.25);
       }
+    }
+
+    function toggleKeyVisibility() {
+      const inp = document.getElementById("azureKeyInput");
+      const btn = document.getElementById("keyToggleBtn");
+      if (!inp) return;
+      inp.type = inp.type === "password" ? "text" : "password";
+      btn.textContent = inp.type === "password" ? "👁" : "🙈";
     }
 
     function bindBgMusicEvents() {
