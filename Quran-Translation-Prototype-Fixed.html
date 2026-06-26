@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google" content="notranslate" />
+  <title>Quran — Read & Listen Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f2ea;
+      --panel: rgba(255,255,255,.9);
+      --panel-solid: #ffffff;
+      --ink: #193129;
+      --muted: #68766f;
+      --line: #dce3de;
+      --green: #0d6b50;
+      --green-2: #0a5943;
+      --green-soft: #e4f1ec;
+      --gold: #b28a3c;
+      --gold-soft: #f5ecd9;
+      --danger: #a43f3f;
+      --shadow: 0 18px 45px rgba(23, 56, 45, .12);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 0 0, rgba(178,138,60,.12), transparent 28rem),
+        radial-gradient(circle at 100% 0, rgba(13,107,80,.12), transparent 30rem),
+        var(--bg);
+    }
+
+    button, select, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .app-shell {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+      width: 48px; height: 48px; border-radius: 50%;
+      display: grid; place-items: center;
+      color: white; background: linear-gradient(145deg, var(--green), var(--green-2));
+      box-shadow: 0 10px 25px rgba(13,107,80,.24);
+      font-family: "Noto Naskh Arabic", serif; font-size: 28px; font-weight: 700;
+    }
+    .brand h1 { margin: 0; font-size: clamp(20px, 3vw, 28px); letter-spacing: -.02em; }
+    .brand p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 12px; border: 1px solid var(--line); border-radius: 999px;
+      background: rgba(255,255,255,.74); color: var(--muted); font-size: 12px;
+      white-space: nowrap;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #8a9a92; }
+    .status-pill.online .status-dot { background: #16a06c; box-shadow: 0 0 0 4px rgba(22,160,108,.12); }
+    .status-pill.error .status-dot { background: var(--danger); }
+
+    .hero {
+      border: 1px solid rgba(255,255,255,.85);
+      background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(249,247,240,.9));
+      border-radius: 30px;
+      padding: clamp(22px, 4vw, 38px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .hero::after {
+      content: "۞";
+      position: absolute; right: 26px; top: -34px;
+      font-family: "Noto Naskh Arabic", serif;
+      font-size: 170px; line-height: 1; color: rgba(178,138,60,.075);
+      pointer-events: none;
+    }
+    .eyebrow { color: var(--green); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
+    .hero h2 { margin: 8px 0 9px; font-size: clamp(25px, 4vw, 42px); line-height: 1.1; letter-spacing: -.035em; max-width: 720px; }
+    .hero p { margin: 0; color: var(--muted); line-height: 1.7; max-width: 820px; font-size: 14px; }
+
+    .mode-tabs {
+      margin-top: 22px;
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px; max-width: 700px;
+    }
+    .mode-btn {
+      border: 1px solid var(--line); background: rgba(255,255,255,.75); color: var(--ink);
+      border-radius: 16px; text-align: left; padding: 15px 16px;
+      transition: .2s ease;
+    }
+    .mode-btn:hover { transform: translateY(-1px); border-color: #b9cbc2; }
+    .mode-btn.active { background: var(--green); color: white; border-color: var(--green); box-shadow: 0 10px 24px rgba(13,107,80,.2); }
+    .mode-btn strong { display: block; font-size: 14px; margin-bottom: 3px; }
+    .mode-btn span { display: block; font-size: 12px; opacity: .78; line-height: 1.45; }
+
+    .main-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.88);
+      border-radius: var(--radius);
+      box-shadow: 0 14px 38px rgba(23,56,45,.08);
+      backdrop-filter: blur(12px);
+    }
+    .settings { padding: 20px; position: sticky; top: 16px; }
+    .settings h3, .reader h3 { margin: 0; font-size: 15px; }
+    .settings-sub { margin: 5px 0 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    .field { margin-bottom: 15px; }
+    .field label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; font-size: 12px; font-weight: 700; }
+    .field label small { color: var(--muted); font-weight: 500; }
+    select, input[type="number"] {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px;
+      background: var(--panel-solid); color: var(--ink); padding: 11px 12px; outline: none;
+    }
+    select:focus, input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(13,107,80,.1); }
+
+    .range-row { display: grid; grid-template-columns: 1fr 48px; gap: 10px; align-items: center; }
+    input[type="range"] { width: 100%; accent-color: var(--green); }
+    .range-value { font-size: 12px; font-weight: 700; color: var(--green); text-align: right; }
+
+    .switch-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 0; border-top: 1px solid var(--line); font-size: 12px; font-weight: 600;
+    }
+    .switch { position: relative; width: 42px; height: 24px; flex: 0 0 auto; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: #c8d2cd; transition: .2s; }
+    .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; border-radius: 50%; background: white; transition: .2s; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+    .switch input:checked + .slider { background: var(--green); }
+    .switch input:checked + .slider::before { transform: translateX(18px); }
+
+    .source-note {
+      margin-top: 14px; padding: 12px; border-radius: 13px;
+      background: var(--gold-soft); color: #6c5728; font-size: 11px; line-height: 1.55;
+      border: 1px solid rgba(178,138,60,.18);
+    }
+
+    .reader { overflow: hidden; }
+    .reader-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 18px 20px; border-bottom: 1px solid var(--line);
+    }
+    .surah-title strong { display: block; font-size: 18px; }
+    .surah-title span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .ayah-badge {
+      min-width: 66px; text-align: center; padding: 9px 12px; border-radius: 999px;
+      background: var(--green-soft); color: var(--green); font-size: 12px; font-weight: 700;
+    }
+
+    .content-stage { padding: clamp(20px, 4vw, 36px); min-height: 440px; display: flex; flex-direction: column; justify-content: center; }
+    .arabic-wrap { transition: .2s; }
+    .arabic-text {
+      margin: 0; text-align: right; direction: rtl;
+      font-family: "Noto Naskh Arabic", "Traditional Arabic", serif;
+      font-size: clamp(31px, 5vw, 48px); line-height: 1.95; font-weight: 500;
+      color: #142a23;
+    }
+    .translation-divider { display: flex; align-items: center; gap: 12px; margin: 26px 0 18px; color: var(--gold); }
+    .translation-divider::before, .translation-divider::after { content: ""; height: 1px; flex: 1; background: linear-gradient(90deg, transparent, rgba(178,138,60,.5)); }
+    .translation-divider::after { background: linear-gradient(90deg, rgba(178,138,60,.5), transparent); }
+    .translation-divider span { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; white-space: nowrap; }
+    .translation-text {
+      margin: 0; font-size: clamp(17px, 2.4vw, 22px); line-height: 1.85;
+      color: #30463e;
+    }
+    .translation-text.myanmar { font-family: "Noto Sans Myanmar", sans-serif; line-height: 2; }
+
+    .listen-mode .arabic-wrap, .listen-mode .translation-divider { display: none; }
+    .listen-mode .content-stage { min-height: 390px; }
+    .listen-mode .translation-text { font-size: clamp(22px, 3.2vw, 31px); line-height: 1.9; text-align: center; }
+
+    .empty-state { text-align: center; color: var(--muted); padding: 50px 20px; }
+    .empty-state .spinner { width: 34px; height: 34px; margin: 0 auto 16px; border: 3px solid #d9e2de; border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .player {
+      padding: 17px 20px 20px; border-top: 1px solid var(--line);
+      background: rgba(248,250,249,.86);
+    }
+    .progress-line { height: 5px; background: #dce5e1; border-radius: 999px; overflow: hidden; margin-bottom: 15px; }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--green), #2ba47d); transition: width .15s linear; }
+    .player-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; }
+    .player-side { display: flex; align-items: center; gap: 8px; }
+    .player-side.right { justify-content: flex-end; }
+    .icon-btn {
+      width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line);
+      background: white; color: var(--ink); display: grid; place-items: center; font-size: 17px;
+      transition: .18s ease;
+    }
+    .icon-btn:hover { border-color: var(--green); color: var(--green); transform: translateY(-1px); }
+    .play-btn {
+      width: 58px; height: 58px; border: none; border-radius: 50%;
+      background: var(--green); color: white; font-size: 22px; display: grid; place-items: center;
+      box-shadow: 0 10px 24px rgba(13,107,80,.25); transition: .18s ease;
+    }
+    .play-btn:hover { background: var(--green-2); transform: scale(1.03); }
+    .play-btn:disabled, .icon-btn:disabled { cursor: not-allowed; opacity: .45; transform: none; }
+    .now-playing { font-size: 11px; color: var(--muted); max-width: 160px; line-height: 1.4; }
+    .now-playing strong { color: var(--ink); display: block; margin-bottom: 2px; }
+    .time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    .notice {
+      display: none; margin: 14px 20px 0; padding: 11px 12px; border-radius: 12px;
+      font-size: 12px; line-height: 1.55; background: #fff5e5; color: #7c5922; border: 1px solid #efdbb9;
+    }
+    .notice.show { display: block; }
+    .notice.error { background: #fff0f0; color: #8d3535; border-color: #efcaca; }
+
+    /* Edge open banner */
+    #edgeBanner {
+      display: none;
+      margin: 14px 20px 0;
+      padding: 16px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #e8f0fb, #f0f5ff);
+      border: 1.5px solid #aac4ef;
+      color: #1a3a6b;
+    }
+    #edgeBanner.show { display: block; }
+    #edgeBanner .eb-title {
+      font-size: 13px; font-weight: 700; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #edgeBanner .eb-body {
+      font-size: 12px; line-height: 1.6; margin-bottom: 12px; color: #2a4a7a;
+    }
+    #edgeBanner .eb-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .edge-open-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 16px; border-radius: 10px; border: none;
+      background: #0078d4; color: white; font-size: 12px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      transition: background .18s, transform .12s;
+      font-family: inherit;
+    }
+    .edge-open-btn:hover { background: #005fa3; transform: translateY(-1px); }
+    .edge-open-btn:active { transform: scale(.97); }
+    .edge-open-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .edge-copy-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 14px; border-radius: 10px;
+      border: 1.5px solid #aac4ef; background: white; color: #1a3a6b;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background .18s; font-family: inherit;
+    }
+    .edge-copy-btn:hover { background: #e8f0fb; }
+    .eb-hint { font-size: 11px; color: #5a78a8; margin-top: 8px; line-height: 1.5; }
+
+    footer { margin-top: 20px; padding: 17px 4px; color: var(--muted); font-size: 11px; line-height: 1.65; text-align: center; }
+    footer strong { color: var(--ink); }
+
+    @media (max-width: 860px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .settings { position: static; }
+      .topbar { align-items: flex-start; }
+      .status-pill { display: none; }
+    }
+    @media (max-width: 600px) {
+      .app-shell { width: min(100% - 16px, 1180px); padding-top: 12px; }
+      .hero { border-radius: 22px; }
+      .mode-tabs { grid-template-columns: 1fr; }
+      .player-row { grid-template-columns: 1fr auto 1fr; gap: 8px; }
+      .now-playing { display: none; }
+      .icon-btn { width: 39px; height: 39px; }
+      .play-btn { width: 54px; height: 54px; }
+      .content-stage { min-height: 390px; }
+    }
+
+    /* Background music volume fade animation */
+    #bgVolField { animation: fadein .3s ease; }
+    @keyframes fadein { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">ق</div>
+        <div>
+          <h1>Quran — Read & Listen</h1>
+          <p>HTML testing prototype v2 • English + Myanmar</p>
+        </div>
+      </div>
+      <div id="statusPill" class="status-pill">
+        <span class="status-dot"></span>
+        <span id="statusText">Connecting to Quran sources…</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Two focused experiences</div>
+      <h2>Listen with clarity. Read with reflection.</h2>
+      <p>
+        Reading mode always plays Arabic recitation while showing the selected translation.
+        Voice mode reads only the selected English or Myanmar translation, with no Arabic audio.
+      </p>
+      <div class="mode-tabs" role="tablist" aria-label="App mode">
+        <button id="readingModeBtn" class="mode-btn active" type="button" role="tab" aria-selected="true">
+          <strong>Mode 1 — Reading</strong>
+          <span>Arabic recitation + selected translation text</span>
+        </button>
+        <button id="listenModeBtn" class="mode-btn" type="button" role="tab" aria-selected="false">
+          <strong>Mode 2 — Voice / Listen</strong>
+          <span>English or Myanmar translation voice only</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <aside class="panel settings">
+        <h3>Reading settings</h3>
+        <p class="settings-sub">Choose a Surah, translation and playback preference.</p>
+
+        <div class="field">
+          <label for="surahSelect">Surah <small id="surahCountLabel">114 chapters</small></label>
+          <select id="surahSelect" aria-label="Choose Surah"></select>
+        </div>
+
+        <div class="field">
+          <label for="ayahSelect">Ayah <small id="ayahCountLabel">—</small></label>
+          <select id="ayahSelect" aria-label="Choose Ayah"></select>
+        </div>
+
+        <div class="field">
+          <label for="languageSelect">Translation</label>
+          <select id="languageSelect">
+            <option value="en">English — Saheeh International</option>
+            <option value="my">Myanmar — Hashim Tin Myint</option>
+          </select>
+        </div>
+
+        <div id="voiceEngineField" class="field" hidden>
+          <label for="voiceEngineSelect">Voice engine <small>Mode 2</small></label>
+          <select id="voiceEngineSelect">
+            <option value="edge">Online neural voice — recommended</option>
+            <option value="browser">Device / browser voice</option>
+          </select>
+        </div>
+
+        <div id="voiceField" class="field" hidden>
+          <label for="voiceSelect">Calm voice <small id="voiceHint">Checking voices…</small></label>
+          <select id="voiceSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="speedRange">Playback speed</label>
+          <div class="range-row">
+            <input id="speedRange" type="range" min="0.5" max="1.5" step="0.05" value="0.95" />
+            <div id="speedValue" class="range-value">0.95×</div>
+          </div>
+        </div>
+
+        <div class="switch-row">
+          <span>Continue to next Ayah</span>
+          <label class="switch">
+            <input id="autoNextToggle" type="checkbox" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+
+        <div class="switch-row">
+          <span>Repeat current Ayah</span>
+          <label class="switch">
+            <input id="repeatToggle" type="checkbox" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="field" style="margin-top:14px">
+          <label for="bgMusicSelect" style="margin-bottom:7px">
+            🎵 Background tone
+            <small id="bgMusicHint">Very low · won't disturb voice</small>
+          </label>
+          <select id="bgMusicSelect">
+            <option value="">None — silence</option>
+            <option value="432">✨ 432 Hz — Golden calm (recommended)</option>
+            <option value="theta">🧘 7 Hz Theta — Deep relaxation</option>
+            <option value="alpha">🌿 10 Hz Alpha — Peaceful focus</option>
+            <option value="delta">🌙 3 Hz Delta — Ultra deep calm</option>
+            <option value="528">💚 528 Hz — Miracle tone (healing)</option>
+            <option value="binaural">🎧 Binaural 40 Hz — Clear mind</option>
+          </select>
+        </div>
+        <div class="field" id="bgVolField" style="display:none">
+          <label for="bgVolRange">Tone volume <small id="bgVolValue" style="color:var(--green);font-weight:700">5%</small></label>
+          <div class="range-row">
+            <input id="bgVolRange" type="range" min="0" max="0.18" step="0.005" value="0.05" />
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5">
+            🎧 Use headphones for best binaural effect. Tone sits far below the voice.
+          </div>
+        </div>
+
+        <div id="sourceNote" class="source-note">
+          Arabic: Uthmani text • Reciter: Mishary Rashid Alafasy • English: Saheeh International • Myanmar: Hashim Tin Myint. Myanmar voice test: Nilar/Thiha neural voice in Microsoft Edge.
+        </div>
+      </aside>
+
+      <section id="readerPanel" class="panel reader">
+        <div class="reader-head">
+          <div class="surah-title">
+            <strong id="surahTitle">Loading…</strong>
+            <span id="surahMeta">Please wait</span>
+          </div>
+          <div id="ayahBadge" class="ayah-badge">Ayah —</div>
+        </div>
+
+        <div id="notice" class="notice"></div>
+
+        <!-- Edge open banner -->
+        <div id="edgeBanner">
+          <div class="eb-title">🇲🇲 Myanmar Neural Voice requires Microsoft Edge</div>
+          <div class="eb-body">The Myanmar neural voices (<strong>Nilar</strong> &amp; <strong>Thiha</strong>) are beautiful, calm voices — but they only work inside <strong>Microsoft Edge</strong> browser. You are currently using a different browser.<br><br>Click the button below to open this file in Edge automatically.</div>
+          <div class="eb-actions">
+            <button class="edge-open-btn" onclick="openInEdge()" type="button">🌐 Open this file in Microsoft Edge</button>
+            <button class="edge-copy-btn" onclick="copyFilePath()" type="button" id="copyPathBtn">📋 Copy file path</button>
+          </div>
+          <div class="eb-hint" id="ebHint">💡 If Edge does not open automatically: open Edge → press Ctrl+O → paste the path → press Enter.</div>
+        </div>
+
+        <div id="contentStage" class="content-stage">
+          <div id="loadingState" class="empty-state">
+            <div class="spinner"></div>
+            Loading Quran text and recitation…
+          </div>
+          <div id="verseContent" hidden>
+            <div class="arabic-wrap">
+              <p id="arabicText" class="arabic-text" lang="ar" dir="rtl"></p>
+            </div>
+            <div class="translation-divider"><span id="translationLabel">English translation</span></div>
+            <p id="translationText" class="translation-text" lang="en"></p>
+          </div>
+        </div>
+
+        <div class="player">
+          <div class="progress-line" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+          <div class="player-row">
+            <div class="player-side">
+              <button id="prevBtn" class="icon-btn" type="button" aria-label="Previous Ayah">‹</button>
+              <div class="now-playing">
+                <strong id="playModeLabel">Arabic recitation</strong>
+                <span id="playSourceLabel">Mishary Alafasy</span>
+              </div>
+            </div>
+            <button id="playBtn" class="play-btn" type="button" aria-label="Play" disabled>▶</button>
+            <div class="player-side right">
+              <div id="timeLabel" class="time">0:00 / 0:00</div>
+              <button id="nextBtn" class="icon-btn" type="button" aria-label="Next Ayah">›</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer>
+      <strong>Prototype notice:</strong> Quran text and translations are loaded from third-party Quran data services and should be independently reviewed before public release.
+      For Myanmar Mode 2 testing, open this file in Microsoft Edge and select Online neural voice. A production release should use an officially licensed TTS backend. Automatic browser translation is intentionally disabled.
+    </footer>
+  </main>
+
+  <audio id="arabicAudio" preload="metadata"></audio>
+  <audio id="ttsAudio" preload="auto"></audio>
+  <audio id="bgAudio" loop preload="none"></audio>
+
+  <script>
+    "use strict";
+
+    const API = {
+      chapters: "https://api.alquran.cloud/v1/surah",
+      surah: (n) => `https://api.alquran.cloud/v1/surah/${n}/editions/quran-uthmani,en.sahih,ar.alafasy`,
+      myanmar: (n) => `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/mya-hashimtinmyint/${n}.json`,
+      myanmarFallback: (n) => `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/mya-hashimtinmyint/${n}.min.json`,
+      edgeModule: "https://cdn.jsdelivr.net/npm/edge-tts-universal@1.4.0/dist/browser.js"
+    };
+
+    const FALLBACK_CHAPTERS = [
+      { number: 1, name: "سُورَةُ ٱلْفَاتِحَةِ", englishName: "Al-Faatiha", englishNameTranslation: "The Opening", numberOfAyahs: 7 },
+      { number: 2, name: "سُورَةُ البَقَرَةِ", englishName: "Al-Baqara", englishNameTranslation: "The Cow", numberOfAyahs: 286 },
+      { number: 3, name: "سُورَةُ آلِ عِمْرَانَ", englishName: "Aal-i-Imraan", englishNameTranslation: "The Family of Imraan", numberOfAyahs: 200 }
+    ];
+
+    const EDGE_VOICES = {
+      my: [
+        { name: "my-MM-NilarNeural", label: "Nilar — Myanmar female neural" },
+        { name: "my-MM-ThihaNeural", label: "Thiha — Myanmar male neural" }
+      ],
+      en: [
+        { name: "en-US-AvaNeural", label: "Ava — English female neural" },
+        { name: "en-GB-SoniaNeural", label: "Sonia — English UK female neural" },
+        { name: "en-US-GuyNeural", label: "Guy — English male neural" }
+      ]
+    };
+
+    const state = {
+      mode: "reading",
+      language: "en",
+      chapters: [],
+      surahNumber: 1,
+      ayahIndex: 0,
+      arabic: [],
+      english: [],
+      myanmar: [],
+      audio: [],
+      loadingToken: 0,
+      isPlaying: false,
+      voices: [],
+      speech: null,
+      ttsStartedAt: 0,
+      ttsEstimatedMs: 0,
+      speechKeepAlive: null,
+      playbackSession: 0,
+      activeMediaSession: 0,
+      edgeModule: null,
+      edgeModulePromise: null,
+      ttsObjectUrl: "",
+      myanmarPromise: null
+    };
+
+    const el = Object.fromEntries([
+      "statusPill","statusText","readingModeBtn","listenModeBtn","surahSelect","ayahSelect",
+      "languageSelect","voiceEngineField","voiceEngineSelect","voiceField","voiceSelect","voiceHint",
+      "speedRange","speedValue","autoNextToggle","repeatToggle","readerPanel","surahTitle","surahMeta",
+      "ayahBadge","notice","loadingState","verseContent","arabicText","translationText","translationLabel",
+      "playBtn","prevBtn","nextBtn","progressFill","timeLabel","playModeLabel","playSourceLabel",
+      "arabicAudio","ttsAudio","ayahCountLabel"
+    ].map(id => [id, document.getElementById(id)]));
+
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const isMicrosoftEdge = () => /Edg\//.test(navigator.userAgent);
+
+    function setStatus(text, type = "") {
+      el.statusText.textContent = text;
+      el.statusPill.className = `status-pill ${type}`.trim();
+    }
+
+    function showNotice(message, type = "") {
+      if (!message) {
+        el.notice.className = "notice";
+        el.notice.textContent = "";
+        return;
+      }
+      el.notice.textContent = message;
+      el.notice.className = `notice show ${type}`.trim();
+    }
+
+    async function fetchJSON(url, fallbackUrl = null) {
+      const attempt = async (target) => {
+        const response = await fetch(target, { cache: "default" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      };
+      try {
+        return await attempt(url);
+      } catch (error) {
+        if (!fallbackUrl) throw error;
+        return attempt(fallbackUrl);
+      }
+    }
+
+    function normalizeMyanmarPayload(payload) {
+      const candidates = [
+        payload?.quran,
+        payload?.verses,
+        payload?.ayahs,
+        payload?.chapter,
+        payload?.data,
+        Array.isArray(payload) ? payload : null
+      ];
+      const rows = candidates.find(Array.isArray) || [];
+      return rows.map((row) => {
+        if (typeof row === "string") return row;
+        return row?.text ?? row?.translation ?? row?.content ?? row?.verseText ?? row?.ayah ?? "";
+      }).map(String);
+    }
+
+    async function loadChapters() {
+      try {
+        const payload = await fetchJSON(API.chapters);
+        state.chapters = payload?.data || FALLBACK_CHAPTERS;
+        setStatus("Quran sources connected", "online");
+      } catch (error) {
+        state.chapters = FALLBACK_CHAPTERS;
+        setStatus("Limited offline chapter list", "error");
+        showNotice("The chapter index service is unavailable. A limited fallback list is shown, but Surah content may still load.");
+      }
+      renderChapterOptions();
+    }
+
+    function renderChapterOptions() {
+      el.surahSelect.innerHTML = state.chapters.map(chapter =>
+        `<option value="${chapter.number}">${chapter.number}. ${escapeHTML(chapter.englishName)} — ${escapeHTML(chapter.englishNameTranslation)}</option>`
+      ).join("");
+      el.surahSelect.value = String(state.surahNumber);
+    }
+
+    function populateAyahOptions(count) {
+      el.ayahSelect.innerHTML = Array.from({ length: count }, (_, i) => `<option value="${i}">Ayah ${i + 1}</option>`).join("");
+      el.ayahSelect.value = String(Math.min(state.ayahIndex, Math.max(0, count - 1)));
+      el.ayahCountLabel.textContent = `${count} verses`;
+    }
+
+    async function loadSurah(number, preserveAyah = false, keepPlaybackSession = false, waitForMyanmar = false) {
+      if (!keepPlaybackSession) stopPlayback();
+      const token = ++state.loadingToken;
+      state.surahNumber = Number(number);
+      state.myanmar = [];
+      if (!preserveAyah) state.ayahIndex = 0;
+      el.loadingState.hidden = false;
+      el.verseContent.hidden = true;
+      el.playBtn.disabled = true;
+      showNotice("");
+
+      try {
+        const mainPayload = await fetchJSON(API.surah(state.surahNumber));
+        if (token !== state.loadingToken) return false;
+
+        const editions = Array.isArray(mainPayload?.data) ? mainPayload.data : [];
+        const byId = Object.fromEntries(editions.map(item => [item?.edition?.identifier, item]));
+        const arabicEdition = byId["quran-uthmani"] || editions[0];
+        const englishEdition = byId["en.sahih"] || editions.find(x => x?.edition?.language === "en") || editions[1];
+        const audioEdition = byId["ar.alafasy"] || editions.find(x => x?.edition?.type === "audio") || editions[2];
+
+        state.arabic = arabicEdition?.ayahs || [];
+        state.english = englishEdition?.ayahs || [];
+        state.audio = audioEdition?.ayahs || [];
+
+        if (!state.arabic.length) throw new Error("Arabic text was not returned.");
+
+        populateAyahOptions(state.arabic.length);
+        updateSurahHeader(arabicEdition);
+        renderVerse();
+        el.playBtn.disabled = false;
+        el.loadingState.hidden = true;
+        el.verseContent.hidden = false;
+
+        state.myanmarPromise = loadMyanmar(token);
+        if (waitForMyanmar || state.language === "my") await state.myanmarPromise;
+        return true;
+      } catch (error) {
+        if (token !== state.loadingToken) return false;
+        el.loadingState.hidden = true;
+        el.verseContent.hidden = true;
+        el.playBtn.disabled = true;
+        showNotice(`Unable to load this Surah. Check the internet connection and reload. (${error.message})`, "error");
+        setStatus("Quran content unavailable", "error");
+        return false;
+      }
+    }
+
+    async function loadMyanmar(token) {
+      try {
+        const payload = await fetchJSON(API.myanmar(state.surahNumber), API.myanmarFallback(state.surahNumber));
+        if (token !== state.loadingToken) return false;
+        state.myanmar = normalizeMyanmarPayload(payload);
+        if (state.language === "my") renderVerse();
+        return state.myanmar.length > 0;
+      } catch (error) {
+        if (token !== state.loadingToken) return false;
+        if (state.language === "my") {
+          showNotice("Myanmar translation could not be loaded from the prototype source. English remains available.", "error");
+          renderVerse();
+        }
+        return false;
+      }
+    }
+
+    function updateSurahHeader(edition) {
+      const chapter = state.chapters.find(c => Number(c.number) === state.surahNumber);
+      const name = chapter?.englishName || edition?.englishName || `Surah ${state.surahNumber}`;
+      const meaning = chapter?.englishNameTranslation || edition?.englishNameTranslation || "";
+      const arabicName = chapter?.name || edition?.name || "";
+      el.surahTitle.textContent = `${state.surahNumber}. ${name}`;
+      el.surahMeta.textContent = [meaning, arabicName].filter(Boolean).join(" • ");
+    }
+
+    function getCurrentTranslation() {
+      if (state.language === "my") {
+        const text = state.myanmar[state.ayahIndex];
+        return text || (state.myanmar.length ? "Myanmar translation unavailable for this Ayah." : "Loading Myanmar translation…");
+      }
+      return state.english[state.ayahIndex]?.text || "English translation unavailable.";
+    }
+
+    function renderVerse() {
+      const arabic = state.arabic[state.ayahIndex];
+      if (!arabic) return;
+      el.arabicText.textContent = arabic.text || "";
+      el.translationText.textContent = getCurrentTranslation();
+      el.translationText.classList.toggle("myanmar", state.language === "my");
+      el.translationText.lang = state.language === "my" ? "my" : "en";
+      el.translationLabel.textContent = state.language === "my" ? "Myanmar translation" : "English translation";
+      el.ayahBadge.textContent = `Ayah ${state.ayahIndex + 1}`;
+      el.ayahSelect.value = String(state.ayahIndex);
+      el.progressFill.style.width = "0%";
+      el.timeLabel.textContent = "0:00 / 0:00";
+      updatePlayerLabels();
+      updateNavButtons();
+    }
+
+    function setMode(mode) {
+      stopPlayback();
+      state.mode = mode;
+      const reading = mode === "reading";
+      el.readingModeBtn.classList.toggle("active", reading);
+      el.listenModeBtn.classList.toggle("active", !reading);
+      el.readingModeBtn.setAttribute("aria-selected", String(reading));
+      el.listenModeBtn.setAttribute("aria-selected", String(!reading));
+      el.readerPanel.classList.toggle("listen-mode", !reading);
+      el.voiceEngineField.hidden = reading;
+      el.voiceField.hidden = reading;
+      showNotice("");
+      if (!reading) {
+        el.voiceEngineSelect.value = state.language === "my" ? "edge" : "browser";
+        refreshVoices();
+      }
+      updatePlayerLabels();
+      renderVerse();
+    }
+
+    function updatePlayerLabels() {
+      if (state.mode === "reading") {
+        el.playModeLabel.textContent = "Arabic recitation";
+        el.playSourceLabel.textContent = "Mishary Alafasy";
+      } else {
+        el.playModeLabel.textContent = state.language === "my" ? "Myanmar voice" : "English voice";
+        const engine = el.voiceEngineSelect.value;
+        el.playSourceLabel.textContent = engine === "edge"
+          ? (el.voiceSelect.selectedOptions[0]?.textContent || "Online neural voice")
+          : (selectedBrowserVoice()?.name || "Device speech voice");
+      }
+    }
+
+    function updateNavButtons() {
+      const firstChapter = Math.min(...state.chapters.map(c => Number(c.number)));
+      const lastChapter = Math.max(...state.chapters.map(c => Number(c.number)));
+      el.prevBtn.disabled = state.ayahIndex <= 0 && state.surahNumber <= firstChapter;
+      const atLastAyah = state.ayahIndex >= state.arabic.length - 1;
+      el.nextBtn.disabled = atLastAyah && state.surahNumber >= lastChapter;
+    }
+
+    function selectedBrowserVoice() {
+      return state.voices.find(v => v.name === el.voiceSelect.value) || null;
+    }
+
+    function nativeVoiceCount() {
+      const target = state.language === "my" ? /^my([-_]|$)/i : /^en([-_]|$)/i;
+      return state.voices.filter(v => target.test(v.lang)).length;
+    }
+
+    function refreshVoices() {
+      const engine = el.voiceEngineSelect.value;
+      if (engine === "edge") {
+        const choices = EDGE_VOICES[state.language];
+        const previous = el.voiceSelect.value;
+        el.voiceSelect.innerHTML = choices.map(v => `<option value="${v.name}">${escapeHTML(v.label)}</option>`).join("");
+        if (choices.some(v => v.name === previous)) el.voiceSelect.value = previous;
+        el.voiceSelect.disabled = false;
+        if (isMicrosoftEdge()) {
+          el.voiceHint.textContent = "Online neural";
+          showNotice(state.language === "my" ? "Myanmar neural voice is ready. Continuous playback will move automatically to the next Ayah." : "Online neural voice is ready.");
+          hideEdgeBanner();
+        } else {
+          el.voiceHint.textContent = "Open in Microsoft Edge";
+          showEdgeBanner();
+        }
+        updatePlayerLabels();
+        return;
+      }
+
+      if (!("speechSynthesis" in window)) {
+        el.voiceSelect.innerHTML = '<option>Speech synthesis not supported</option>';
+        el.voiceSelect.disabled = true;
+        el.voiceHint.textContent = "Unavailable";
+        return;
+      }
+
+      state.voices = window.speechSynthesis.getVoices();
+      const target = state.language === "my" ? /^my([-_]|$)/i : /^en([-_]|$)/i;
+      let matching = state.voices.filter(v => target.test(v.lang));
+      if (!matching.length && state.language === "en") matching = state.voices;
+
+      const calmScore = (voice) => {
+        const n = voice.name.toLowerCase();
+        let score = 0;
+        if (/natural|neural|premium|enhanced|online/.test(n)) score += 8;
+        if (/sonia|samantha|ava|aria|jenny|serena|zira|hazel/.test(n)) score += 5;
+        if (voice.default) score += 2;
+        return score;
+      };
+      matching.sort((a,b) => calmScore(b) - calmScore(a) || a.name.localeCompare(b.name));
+
+      const previous = el.voiceSelect.value;
+      el.voiceSelect.innerHTML = matching.length
+        ? matching.map(v => `<option value="${escapeHTML(v.name)}">${escapeHTML(v.name)} (${escapeHTML(v.lang)})</option>`).join("")
+        : '<option value="">No matching voice installed</option>';
+      if (matching.some(v => v.name === previous)) el.voiceSelect.value = previous;
+      el.voiceSelect.disabled = !matching.length;
+
+      const nativeCount = nativeVoiceCount();
+      if (state.language === "my" && nativeCount === 0) {
+        el.voiceHint.textContent = "No my-MM voice installed";
+        showEdgeBanner();
+      } else {
+        el.voiceHint.textContent = nativeCount ? `${nativeCount} matching` : "Browser voice";
+        showNotice("");
+      }
+      updatePlayerLabels();
+    }
+
+    function getSpeed() { return Number(el.speedRange.value); }
+
+    function currentAudioUrl() {
+      const item = state.audio[state.ayahIndex];
+      return item?.audio || item?.audioSecondary?.[0] || "";
+    }
+
+    async function togglePlayback() {
+      if (state.isPlaying) {
+        pausePlayback();
+        return;
+      }
+      showNotice("");
+      const session = ++state.playbackSession;
+      state.isPlaying = true;
+      setPlaying(true);
+      await playCurrent(session);
+    }
+
+    async function playCurrent(session) {
+      if (session !== state.playbackSession || !state.isPlaying) return;
+      if (state.mode === "reading") return playArabic(session);
+      return playTranslationVoice(session);
+    }
+
+    async function playArabic(session) {
+      const url = currentAudioUrl();
+      if (!url) {
+        showNotice("Arabic audio is unavailable for this Ayah.", "error");
+        setPlaying(false);
+        return;
+      }
+      clearSpeechOnly();
+      pauseTtsAudio();
+      state.activeMediaSession = session;
+      if (el.arabicAudio.src !== url) el.arabicAudio.src = url;
+      el.arabicAudio.playbackRate = getSpeed();
+      try {
+        await el.arabicAudio.play();
+        if (session === state.playbackSession) setPlaying(true);
+      } catch (error) {
+        showNotice(`The browser blocked or could not play the recitation. Press Play again. (${error.message})`, "error");
+        setPlaying(false);
+      }
+    }
+
+    async function playTranslationVoice(session) {
+      if (state.language === "my" && !state.myanmar.length && state.myanmarPromise) {
+        await state.myanmarPromise;
+      }
+      if (session !== state.playbackSession || !state.isPlaying) return;
+
+      const text = getCurrentTranslation();
+      if (!text || /Loading|unavailable/i.test(text)) {
+        showNotice("The selected translation is not ready for voice playback.", "error");
+        setPlaying(false);
+        return;
+      }
+
+      if (el.voiceEngineSelect.value === "edge") {
+        try {
+          await playEdgeNeural(text, session);
+          return;
+        } catch (error) {
+          console.error(error);
+          if (state.language === "my" && nativeVoiceCount() === 0) {
+            showEdgeBanner();
+            setPlaying(false);
+            return;
+          }
+          showNotice("Online neural voice failed; switching to the installed device voice.");
+        }
+      }
+      playBrowserSpeech(text, session);
+    }
+
+    async function loadEdgeModule() {
+      if (state.edgeModule) return state.edgeModule;
+      if (!state.edgeModulePromise) {
+        state.edgeModulePromise = import(API.edgeModule).then(mod => {
+          state.edgeModule = mod;
+          return mod;
+        }).catch(error => {
+          state.edgeModulePromise = null;
+          throw error;
+        });
+      }
+      return state.edgeModulePromise;
+    }
+
+    async function playEdgeNeural(text, session) {
+      if (!isMicrosoftEdge()) throw new Error("Microsoft Edge browser is required for key-free neural TTS");
+      clearSpeechOnly();
+      el.arabicAudio.pause();
+      const mod = await loadEdgeModule();
+      if (session !== state.playbackSession || !state.isPlaying) return;
+      const VoiceClass = mod.EdgeTTS || mod.UniversalEdgeTTS;
+      if (!VoiceClass) throw new Error("Neural voice module did not load correctly");
+
+      const speedPercent = Math.round((getSpeed() - 1) * 100);
+      const tts = new VoiceClass(text, el.voiceSelect.value, {
+        rate: `${speedPercent >= 0 ? "+" : ""}${speedPercent}%`,
+        pitch: "+0Hz",
+        volume: "+0%"
+      });
+      const result = await tts.synthesize();
+      if (session !== state.playbackSession || !state.isPlaying) return;
+
+      const audioBlob = result.audio instanceof Blob
+        ? result.audio
+        : new Blob([await result.audio.arrayBuffer()], { type: "audio/mpeg" });
+      revokeTtsUrl();
+      state.ttsObjectUrl = URL.createObjectURL(audioBlob);
+      el.ttsAudio.src = state.ttsObjectUrl;
+      el.ttsAudio.playbackRate = getSpeed();
+      state.activeMediaSession = session;
+      await el.ttsAudio.play();
+      setPlaying(true);
+    }
+
+    function playBrowserSpeech(text, session) {
+      if (!("speechSynthesis" in window)) {
+        showNotice("Speech synthesis is not supported in this browser.", "error");
+        setPlaying(false);
+        return;
+      }
+      if (state.language === "my" && nativeVoiceCount() === 0) {
+        showEdgeBanner();
+        setPlaying(false);
+        return;
+      }
+
+      clearSpeechOnly();
+      pauseTtsAudio();
+      el.arabicAudio.pause();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = state.language === "my" ? "my-MM" : "en-US";
+      utterance.rate = Math.max(.7, Math.min(1.25, getSpeed() * .92));
+      utterance.pitch = .96;
+      utterance.volume = 1;
+      const voice = selectedBrowserVoice();
+      if (voice) utterance.voice = voice;
+
+      const words = text.trim().split(/\s+/).length;
+      state.ttsEstimatedMs = Math.max(1800, (words / (145 * utterance.rate)) * 60000);
+      state.ttsStartedAt = performance.now();
+      state.speech = utterance;
+      state.activeMediaSession = session;
+
+      utterance.onstart = () => {
+        if (session !== state.playbackSession) return;
+        setPlaying(true);
+        animateTTSProgress(session);
+        clearInterval(state.speechKeepAlive);
+        state.speechKeepAlive = setInterval(() => {
+          if (session === state.playbackSession && window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+            window.speechSynthesis.pause();
+            window.speechSynthesis.resume();
+          }
+        }, 10000);
+      };
+      utterance.onend = () => {
+        clearSpeechKeepAlive();
+        if (session !== state.playbackSession) return;
+        el.progressFill.style.width = "100%";
+        finishCurrent(session);
+      };
+      utterance.onerror = (event) => {
+        clearSpeechKeepAlive();
+        if (session !== state.playbackSession) return;
+        if (event.error !== "canceled" && event.error !== "interrupted") {
+          showNotice(`Translation voice could not play (${event.error}). Try another voice engine.`, "error");
+          setPlaying(false);
+        }
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function clearSpeechKeepAlive() {
+      if (state.speechKeepAlive) clearInterval(state.speechKeepAlive);
+      state.speechKeepAlive = null;
+    }
+
+    function clearSpeechOnly() {
+      clearSpeechKeepAlive();
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      state.speech = null;
+    }
+
+    function pauseTtsAudio() {
+      el.ttsAudio.pause();
+      try { el.ttsAudio.currentTime = 0; } catch (_) {}
+    }
+
+    function revokeTtsUrl() {
+      if (state.ttsObjectUrl) URL.revokeObjectURL(state.ttsObjectUrl);
+      state.ttsObjectUrl = "";
+    }
+
+    function pausePlayback() {
+      state.playbackSession++;
+      el.arabicAudio.pause();
+      pauseTtsAudio();
+      clearSpeechOnly();
+      setPlaying(false);
+    }
+
+    function stopPlayback() {
+      state.playbackSession++;
+      el.arabicAudio.pause();
+      try { el.arabicAudio.currentTime = 0; } catch (_) {}
+      pauseTtsAudio();
+      revokeTtsUrl();
+      clearSpeechOnly();
+      setPlaying(false);
+      el.progressFill.style.width = "0%";
+      el.timeLabel.textContent = "0:00 / 0:00";
+    }
+
+    function setPlaying(value) {
+      state.isPlaying = value;
+      el.playBtn.textContent = value ? "❚❚" : "▶";
+      el.playBtn.setAttribute("aria-label", value ? "Pause" : "Play");
+    }
+
+    async function finishCurrent(session) {
+      if (session !== state.playbackSession || !state.isPlaying) return;
+      if (el.repeatToggle.checked) {
+        await sleep(250);
+        if (session === state.playbackSession && state.isPlaying) await playCurrent(session);
+        return;
+      }
+      if (el.autoNextToggle.checked) {
+        await advanceForContinuousPlayback(session);
+        return;
+      }
+      setPlaying(false);
+    }
+
+    async function advanceForContinuousPlayback(session) {
+      if (session !== state.playbackSession || !state.isPlaying) return;
+      const nextIndex = state.ayahIndex + 1;
+      if (nextIndex < state.arabic.length) {
+        state.ayahIndex = nextIndex;
+        renderVerse();
+        await sleep(220);
+        if (session === state.playbackSession && state.isPlaying) await playCurrent(session);
+        return;
+      }
+
+      const nextSurah = state.surahNumber + 1;
+      if (!state.chapters.some(c => Number(c.number) === nextSurah)) {
+        setPlaying(false);
+        return;
+      }
+      state.surahNumber = nextSurah;
+      state.ayahIndex = 0;
+      el.surahSelect.value = String(nextSurah);
+      const loaded = await loadSurah(nextSurah, false, true, state.language === "my");
+      if (!loaded || session !== state.playbackSession || !state.isPlaying) return;
+      await sleep(300);
+      if (session === state.playbackSession && state.isPlaying) await playCurrent(session);
+    }
+
+    async function moveAyah(direction) {
+      stopPlayback();
+      const nextIndex = state.ayahIndex + direction;
+      if (nextIndex >= 0 && nextIndex < state.arabic.length) {
+        state.ayahIndex = nextIndex;
+        renderVerse();
+        return;
+      }
+
+      const nextSurah = state.surahNumber + direction;
+      const chapterExists = state.chapters.some(c => Number(c.number) === nextSurah);
+      if (!chapterExists) return;
+      el.surahSelect.value = String(nextSurah);
+      await loadSurah(nextSurah);
+      if (direction < 0) {
+        state.ayahIndex = Math.max(0, state.arabic.length - 1);
+        renderVerse();
+      }
+    }
+
+    function animateTTSProgress(session) {
+      if (!state.isPlaying || state.mode !== "listen" || session !== state.playbackSession || el.voiceEngineSelect.value !== "browser") return;
+      const elapsed = performance.now() - state.ttsStartedAt;
+      const fraction = Math.min(.96, elapsed / state.ttsEstimatedMs);
+      el.progressFill.style.width = `${fraction * 100}%`;
+      el.timeLabel.textContent = `${formatTime(elapsed / 1000)} / ~${formatTime(state.ttsEstimatedMs / 1000)}`;
+      requestAnimationFrame(() => animateTTSProgress(session));
+    }
+
+    function updateAudioProgress(audio) {
+      if (!audio.duration) return;
+      const fraction = audio.currentTime / audio.duration;
+      el.progressFill.style.width = `${fraction * 100}%`;
+      el.timeLabel.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+    }
+
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds)) return "0:00";
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // ── Edge open helpers ──────────────────────────
+    const el_edgeBanner = () => document.getElementById("edgeBanner");
+
+    function showEdgeBanner() {
+      showNotice("");
+      el_edgeBanner().classList.add("show");
+      // Try to detect the actual file path
+      const path = window.location.href;
+      document.getElementById("ebHint").textContent =
+        path.startsWith("file://")
+          ? "💡 File path detected. Click the button above to open in Edge, or copy the path and open it manually."
+          : "💡 Save this file to your computer first, then click Open in Edge.";
+    }
+
+    function hideEdgeBanner() {
+      el_edgeBanner().classList.remove("show");
+    }
+
+    function openInEdge() {
+      const path = window.location.href;
+      if (!path.startsWith("file://")) {
+        alert("Please save this HTML file to your computer first, then open it from your local files.");
+        return;
+      }
+      // Try to open directly in Edge via protocol
+      // msedge: URI scheme — works on Windows
+      const edgeUri = "microsoft-edge:" + path;
+      window.location.href = edgeUri;
+      // Show fallback hint after short delay
+      setTimeout(() => {
+        document.getElementById("ebHint").innerHTML =
+          "<strong>If Edge did not open:</strong><br>" +
+          "1. Copy the path below<br>" +
+          "2. Open Microsoft Edge<br>" +
+          "3. Press <kbd style=\"background:#eee;padding:1px 5px;border-radius:4px;font-family:monospace\">Ctrl + O</kbd> (Windows) or <kbd style=\"background:#eee;padding:1px 5px;border-radius:4px;font-family:monospace\">Cmd + O</kbd> (Mac)<br>" +
+          "4. Paste the path and press Enter<br><br>" +
+          "<code style=\"background:#f0f4ff;padding:4px 8px;border-radius:6px;font-size:11px;word-break:break-all;\">" + path + "</code>";
+      }, 1500);
+    }
+
+    function copyFilePath() {
+      const path = window.location.href;
+      navigator.clipboard.writeText(path).then(() => {
+        const btn = document.getElementById("copyPathBtn");
+        btn.textContent = "✅ Copied!";
+        setTimeout(() => { btn.textContent = "📋 Copy file path"; }, 2000);
+      }).catch(() => {
+        prompt("Copy this path and open it in Microsoft Edge:", path);
+      });
+    }
+    // ───────────────────────────────────────────────
+
+    function bindEvents() {
+      el.readingModeBtn.addEventListener("click", () => setMode("reading"));
+      el.listenModeBtn.addEventListener("click", () => setMode("listen"));
+
+      el.surahSelect.addEventListener("change", () => loadSurah(Number(el.surahSelect.value)));
+      el.ayahSelect.addEventListener("change", () => {
+        stopPlayback();
+        state.ayahIndex = Number(el.ayahSelect.value);
+        renderVerse();
+      });
+
+      el.languageSelect.addEventListener("change", async () => {
+        stopPlayback();
+        state.language = el.languageSelect.value;
+        if (state.mode === "listen") el.voiceEngineSelect.value = state.language === "my" ? "edge" : "browser";
+        if (state.language === "my" && !state.myanmar.length && state.myanmarPromise) await state.myanmarPromise;
+        if (state.mode === "listen") refreshVoices();
+        else showNotice("");
+        renderVerse();
+      });
+
+      el.voiceEngineSelect.addEventListener("change", () => {
+        stopPlayback();
+        refreshVoices();
+      });
+      el.voiceSelect.addEventListener("change", updatePlayerLabels);
+      el.speedRange.addEventListener("input", () => {
+        el.speedValue.textContent = `${getSpeed().toFixed(2)}×`;
+        el.arabicAudio.playbackRate = getSpeed();
+        el.ttsAudio.playbackRate = getSpeed();
+      });
+
+      el.playBtn.addEventListener("click", togglePlayback);
+      el.prevBtn.addEventListener("click", () => moveAyah(-1));
+      el.nextBtn.addEventListener("click", () => moveAyah(1));
+
+      el.arabicAudio.addEventListener("timeupdate", () => updateAudioProgress(el.arabicAudio));
+      el.arabicAudio.addEventListener("ended", () => finishCurrent(state.activeMediaSession));
+      el.arabicAudio.addEventListener("error", () => {
+        if (el.arabicAudio.error && state.isPlaying) {
+          showNotice("The Arabic audio stream failed. Try the Ayah again or check the internet connection.", "error");
+          setPlaying(false);
+        }
+      });
+
+      el.ttsAudio.addEventListener("timeupdate", () => updateAudioProgress(el.ttsAudio));
+      el.ttsAudio.addEventListener("ended", () => {
+        el.progressFill.style.width = "100%";
+        finishCurrent(state.activeMediaSession);
+      });
+      el.ttsAudio.addEventListener("error", () => {
+        if (el.ttsAudio.error && state.isPlaying) {
+          showNotice("The generated translation audio could not be played. Try again or use Device / browser voice.", "error");
+          setPlaying(false);
+        }
+      });
+
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          state.voices = window.speechSynthesis.getVoices();
+          if (state.mode === "listen" && el.voiceEngineSelect.value === "browser") refreshVoices();
+        };
+      }
+
+      window.addEventListener("beforeunload", () => {
+        stopPlayback();
+        revokeTtsUrl();
+      });
+    }
+
+
+    // ── Background Tones (Web Audio — Binaural / Solfeggio) ──────────
+    //
+    // All tones generated mathematically — no files, works offline.
+    // Technique: Two sine oscillators with a tiny frequency difference
+    // create a beating pattern (binaural beat) perceived by the brain.
+    // The carrier frequency is the audible tone (e.g. 432 Hz).
+    // The beat frequency is the difference (e.g. 7 Hz = Theta state).
+    //
+    let _bgCtx = null;
+    let _bgNodes = [];
+    let _bgMasterGain = null;
+    let _bgCurrentType = "";
+
+    function getBgCtx() {
+      if (!_bgCtx) {
+        _bgCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (_bgCtx.state === "suspended") _bgCtx.resume();
+      return _bgCtx;
+    }
+
+    function stopBgTone() {
+      const now = _bgCtx ? _bgCtx.currentTime : 0;
+      // Fade out smoothly over 2 seconds
+      if (_bgMasterGain && _bgCtx) {
+        _bgMasterGain.gain.setTargetAtTime(0, now, 0.6);
+      }
+      const nodes = [..._bgNodes];
+      _bgNodes = [];
+      _bgCurrentType = "";
+      setTimeout(() => {
+        nodes.forEach(n => { try { n.stop(); } catch(_) {} });
+      }, 2500);
+    }
+
+    function makeSine(ctx, freq, gainVal, masterGain, startOffset = 0) {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      g.gain.value = gainVal;
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(ctx.currentTime + startOffset);
+      return osc;
+    }
+
+    function playBgTone(type) {
+      if (type === _bgCurrentType) return;
+      if (_bgCurrentType) stopBgTone();
+      if (!type) return;
+
+      const ctx = getBgCtx();
+      const vol = parseFloat(document.getElementById("bgVolRange").value) || 0.05;
+
+      // Master gain with smooth fade-in
+      _bgMasterGain = ctx.createGain();
+      _bgMasterGain.gain.setValueAtTime(0, ctx.currentTime);
+      _bgMasterGain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 3.5);
+      _bgMasterGain.connect(ctx.destination);
+
+      // Very subtle reverb-like convolver for warmth
+      const reverb = ctx.createConvolver();
+      const reverbGain = ctx.createGain();
+      reverbGain.gain.value = 0.18;
+      // Simple impulse response
+      const irLen = ctx.sampleRate * 1.8;
+      const irBuf = ctx.createBuffer(2, irLen, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) {
+        const d = irBuf.getChannelData(c);
+        for (let i = 0; i < irLen; i++) {
+          d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 2.5);
+        }
+      }
+      reverb.buffer = irBuf;
+
+      // Route: oscillators → masterGain → destination
+      //        oscillators → reverb → reverbGain → destination (soft warmth)
+      reverbGain.connect(ctx.destination);
+
+      // ── Tone definitions ──────────────────────────────────────────
+      // Each has: carrier freq (left ear), carrier+beat (right ear),
+      // plus sub-bass drone and optional harmonic
+
+      const TONES = {
+        // 432 Hz "golden" — binaural beat of 4 Hz (Theta/Alpha border)
+        // Very calming, natural, ancient tuning standard
+        "432":     { left: 432,  right: 436,  sub: 54,   harm: 864,  name: "432 Hz Golden" },
+        // 7 Hz Theta — associated with deep meditation, creativity
+        "theta":   { left: 200,  right: 207,  sub: 40,   harm: 400,  name: "7 Hz Theta" },
+        // 10 Hz Alpha — relaxed awareness, peaceful focus while reading
+        "alpha":   { left: 220,  right: 230,  sub: 55,   harm: 440,  name: "10 Hz Alpha" },
+        // 3 Hz Delta — very deep calm, healing, not drowsy
+        "delta":   { left: 180,  right: 183,  sub: 36,   harm: 360,  name: "3 Hz Delta" },
+        // 528 Hz "miracle" / "love" frequency — very popular for calm
+        "528":     { left: 528,  right: 534,  sub: 66,   harm: 1056, name: "528 Hz Miracle" },
+        // 40 Hz Gamma — clear mind, focused but calm, no drowsiness
+        "binaural":{ left: 260,  right: 300,  sub: 52,   harm: 520,  name: "40 Hz Binaural" },
+      };
+
+      const cfg = TONES[type];
+      if (!cfg) return;
+
+      // Sub-bass drone — felt more than heard, sits below voice completely
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = "sine";
+      subOsc.frequency.value = cfg.sub;
+      subGain.gain.value = 0.55; // relative — masterGain controls overall level
+      subOsc.connect(subGain);
+      subGain.connect(_bgMasterGain);
+      subOsc.start();
+      _bgNodes.push(subOsc);
+
+      // Left ear carrier — pure sine
+      const leftOsc = ctx.createOscillator();
+      const leftGain = ctx.createGain();
+      const leftPanner = ctx.createStereoPanner();
+      leftOsc.type = "sine";
+      leftOsc.frequency.value = cfg.left;
+      leftGain.gain.value = 0.35;
+      leftPanner.pan.value = -1; // hard left for binaural effect
+      leftOsc.connect(leftGain);
+      leftGain.connect(leftPanner);
+      leftPanner.connect(_bgMasterGain);
+      leftPanner.connect(reverb);
+      reverb.connect(reverbGain);
+      leftOsc.start();
+      _bgNodes.push(leftOsc);
+
+      // Right ear carrier — slightly higher frequency (creates beat)
+      const rightOsc = ctx.createOscillator();
+      const rightGain = ctx.createGain();
+      const rightPanner = ctx.createStereoPanner();
+      rightOsc.type = "sine";
+      rightOsc.frequency.value = cfg.right;
+      rightGain.gain.value = 0.35;
+      rightPanner.pan.value = 1; // hard right
+      rightOsc.connect(rightGain);
+      rightGain.connect(rightPanner);
+      rightPanner.connect(_bgMasterGain);
+      rightOsc.start();
+      _bgNodes.push(rightOsc);
+
+      // Harmonic overtone — very quiet, adds warmth, not noticeable
+      const harmOsc = ctx.createOscillator();
+      const harmGain = ctx.createGain();
+      harmOsc.type = "sine";
+      harmOsc.frequency.value = cfg.harm;
+      harmGain.gain.value = 0.04;
+      harmOsc.connect(harmGain);
+      harmGain.connect(_bgMasterGain);
+      harmOsc.start();
+      _bgNodes.push(harmOsc);
+
+      _bgCurrentType = type;
+      console.log("🎵 Background tone started:", cfg.name);
+    }
+
+    function updateBgVolume() {
+      const vol = parseFloat(document.getElementById("bgVolRange").value) || 0.05;
+      const pct = Math.round(vol * 100);
+      document.getElementById("bgVolValue").textContent = pct + "%";
+      if (_bgMasterGain && _bgCtx) {
+        _bgMasterGain.gain.setTargetAtTime(vol, _bgCtx.currentTime, 0.25);
+      }
+    }
+
+    function bindBgMusicEvents() {
+      const sel      = document.getElementById("bgMusicSelect");
+      const volField = document.getElementById("bgVolField");
+      const volRange = document.getElementById("bgVolRange");
+
+      sel.addEventListener("change", () => {
+        const type = sel.value;
+        volField.style.display = type ? "" : "none";
+        if (!type) { stopBgTone(); return; }
+        playBgTone(type);
+      });
+
+      volRange.addEventListener("input", updateBgVolume);
+    }
+    // ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      bindEvents();
+      bindBgMusicEvents();
+      if ("speechSynthesis" in window) state.voices = window.speechSynthesis.getVoices();
+      await loadChapters();
+      await loadSurah(1);
+    }
+
+    init();
+  </script>
+</body>
+</html>
